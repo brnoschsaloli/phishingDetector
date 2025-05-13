@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detector de Phishing</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Detector de URLs Suspeitas</h1>
+        
+        <div class="input-section">
+            <input type="text" id="urlInput" placeholder="Digite a URL para verificar">
+            <button onclick="checkUrl()">Verificar</button>
+        </div>
+
+        <div class="results-section">
+            <table id="resultsTable">
+                <thead>
+                    <tr>
+                        <th>URL</th>
+                        <th>Status</th>
+                        <th>Detalhes</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function checkUrl() {
+            const urlInput = document.getElementById('urlInput');
+            const url = urlInput.value.trim();
+            
+            if (!url) {
+                alert('Por favor, insira uma URL');
+                return;
+            }
+
+            try {
+                const response = await fetch('/check_url', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url })
+                });
+
+                const data = await response.json();
+                
+                const tbody = document.getElementById('resultsBody');
+                const row = document.createElement('tr');
+                
+                // Status cell with color
+                const statusCell = document.createElement('td');
+                statusCell.textContent = data.is_suspicious ? 'Suspeito' : 'Seguro';
+                statusCell.className = data.is_suspicious ? 'suspicious' : 'safe';
+                
+                // Details cell
+                const detailsCell = document.createElement('td');
+                const details = [];
+                
+                if (data.virustotal_blacklisted) {
+                    details.push('Detectado como malicioso pelo VirusTotal');
+                }
+                
+                if (data.suspicious_patterns.numbers_in_domain) {
+                    details.push('Números no domínio');
+                }
+                
+                if (data.suspicious_patterns.excessive_subdomains) {
+                    details.push('Muitos subdomínios');
+                }
+                
+                if (data.suspicious_patterns.special_chars) {
+                    details.push('Caracteres especiais');
+                }
+                
+                detailsCell.textContent = details.join(', ') || 'Nenhum padrão suspeito encontrado';
+                
+                row.innerHTML = `<td>${data.url}</td>`;
+                row.appendChild(statusCell);
+                row.appendChild(detailsCell);
+                
+                tbody.insertBefore(row, tbody.firstChild);
+                
+                // Clear input
+                urlInput.value = '';
+                
+            } catch (error) {
+                alert('Erro ao verificar URL');
+                console.error('Error:', error);
+            }
+        }
+
+        // Allow Enter key to submit
+        document.getElementById('urlInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                checkUrl();
+            }
+        });
+    </script>
+</body>
+</html> 
