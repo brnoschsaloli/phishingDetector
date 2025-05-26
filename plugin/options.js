@@ -2,17 +2,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const apiKeyInput = document.getElementById('apiKey');
   const sensitivitySelect = document.getElementById('sensitivity');
   const showSafeNotificationsCheckbox = document.getElementById('showSafeNotifications');
-  const blockAllLinksCheckbox = document.getElementById('blockAllLinks');
+  const autoBlockCheckbox = document.getElementById('autoBlock');
   const whitelistInput = document.getElementById('whitelist');
   const saveButton = document.getElementById('save');
   const clearCacheButton = document.getElementById('clearCache');
 
   // Load settings
-  browser.storage.local.get(['apiKey', 'sensitivity', 'showSafeNotifications', 'blockAllLinks', 'whitelist']).then((settings) => {
+  browser.storage.local.get(['apiKey', 'sensitivity', 'showSafeNotifications', 'autoBlock', 'whitelist']).then((settings) => {
     apiKeyInput.value = settings.apiKey || '';
     sensitivitySelect.value = settings.sensitivity || 'medium';
     showSafeNotificationsCheckbox.checked = settings.showSafeNotifications || false;
-    blockAllLinksCheckbox.checked = settings.blockAllLinks || false;
+    autoBlockCheckbox.checked = settings.autoBlock || false;
     whitelistInput.value = settings.whitelist ? JSON.parse(settings.whitelist).join('\n') : '';
     if (!settings.apiKey) {
       apiKeyInput.placeholder = 'Using Google Safe Browsing API key from config.js (override here if needed)';
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
       apiKey: apiKeyInput.value.trim(),
       sensitivity: sensitivitySelect.value,
       showSafeNotifications: showSafeNotificationsCheckbox.checked,
-      blockAllLinks: blockAllLinksCheckbox.checked,
+      autoBlock: autoBlockCheckbox.checked,
       whitelist: JSON.stringify(whitelist)
     }).then(() => {
       alert('Settings saved!');

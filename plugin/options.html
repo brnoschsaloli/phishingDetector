@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Phishing Catcher Options</title>
+  <title>Phishing Detector Options</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -28,7 +28,7 @@
   </style>
 </head>
 <body>
-  <h2>Phishing Catcher Options</h2>
+  <h2>Phishing Detector Options</h2>
   <label>
     Google Safe Browsing API Key:
     <input type="text" id="apiKey" placeholder="Using API key from config.js (override here if needed)">
@@ -46,8 +46,8 @@
     Show notifications for safe URLs
   </label>
   <label>
-    <input type="checkbox" id="blockAllLinks">
-    Block all links (redirect to warning page)
+    <input type="checkbox" id="autoBlock">
+    Automatically block suspicious URLs
   </label>
   <label>
     Whitelist URLs (one per line):

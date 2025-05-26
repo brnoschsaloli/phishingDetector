@@ -3,6 +3,29 @@ browser.storage.local.get(['sensitivity', 'whitelist', 'showSafeNotifications'])
   const whitelist = settings.whitelist ? JSON.parse(settings.whitelist) : [];
   const showSafeNotifications = settings.showSafeNotifications || false;
 
+  // Check if current page is an email client
+  function isEmailClient() {
+    const hostname = window.location.hostname;
+    return hostname.includes('mail.google.com') || hostname.includes('outlook.live.com') || hostname.includes('outlook.office.com');
+  }
+
+  // Check if element is a link in an email
+  function isEmailLink(element) {
+    if (!isEmailClient()) return false;
+    
+    // For Gmail
+    if (window.location.hostname.includes('mail.google.com')) {
+      return element.closest('.gmail_quote') !== null || element.closest('.adn.ads') !== null;
+    }
+    
+    // For Outlook
+    if (window.location.hostname.includes('outlook.live.com') || window.location.hostname.includes('outlook.office.com')) {
+      return element.closest('.ms-email-body') !== null;
+    }
+    
+    return false;
+  }
+
   // Check suspicious patterns
   function checkSuspiciousPatterns(url) {
     const patterns = {
@@ -58,92 +81,145 @@ browser.storage.local.get(['sensitivity', 'whitelist', 'showSafeNotifications'])
     return reasons.length > 0 ? reasons.join(", ") : "Unknown";
   }
 
+  // Add hover effect to suspicious links
+  function addHoverEffect(element) {
+    element.style.borderBottom = '2px solid red';
+    element.style.cursor = 'not-allowed';
+  }
+
+  // Remove hover effect from links
+  function removeHoverEffect(element) {
+    element.style.borderBottom = '';
+    element.style.cursor = '';
+  }
+
   // Create notification element
   function showNotification(url, isSuspicious, patterns, sbBlacklisted, sbFailed = false) {
     const domain = getDomain(url);
     const notification = document.createElement('div');
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px;
+      border-radius: 5px;
+      z-index: 10000;
+      max-width: 400px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      line-height: 1.4;
+    `;
+
     if (isSuspicious || sbFailed) {
+      notification.style.backgroundColor = '#f8d7da';
+      notification.style.color = '#721c24';
+      notification.style.border = '1px solid #f5c6cb';
       const reasons = getSuspicionReasons(patterns, sbBlacklisted, sbFailed);
-      notification.className = 'phishing-alert';
-      notification.textContent = `Warning: Suspicious link detected - ${domain} (Reasons: ${reasons})`;
+      notification.textContent = `Warning: Suspicious link detected - ${domain}\nReasons: ${reasons}`;
     } else if (showSafeNotifications) {
-      notification.className = 'safe-alert';
+      notification.style.backgroundColor = '#d4edda';
+      notification.style.color = '#155724';
+      notification.style.border = '1px solid #c3e6cb';
       notification.textContent = `Safe link confirmed - ${domain}`;
     } else {
-      return; // No notification if safe notifications are disabled and URL is safe
+      return;
     }
+
     document.body.appendChild(notification);
     setTimeout(() => notification.remove(), 5000);
   }
 
-  // Monitor links on hover with debouncing
-  let lastCheckedUrl = null;
-  let lastCheckTime = 0;
-  const debounceDelay = 1500; // 1500ms debounce to avoid rate limits
-
-  function checkLink(url, callback) {
-    if (!url || url === lastCheckedUrl && Date.now() - lastCheckTime < debounceDelay) {
-      return;
-    }
-    lastCheckedUrl = url;
-    lastCheckTime = Date.now();
+  // Check URL and update link appearance
+  async function checkUrl(url, element) {
+    if (!url || !url.startsWith('http')) return;
 
     if (whitelist.some(w => url.includes(w))) {
       if (showSafeNotifications) {
-        callback(false, {}, false, false);
+        showNotification(url, false, {}, false, false);
       }
       return;
     }
 
     const patterns = checkSuspiciousPatterns(url);
-    browser.runtime.sendMessage({
-      action: 'checkSafeBrowsing',
-      url: url
-    }).then(response => {
+    try {
+      const response = await browser.runtime.sendMessage({
+        action: 'checkSafeBrowsing',
+        url: url
+      });
+
       const sbBlacklisted = response ? response.blacklisted : false;
       const sbFailed = response ? response.failed : true;
       const suspicious = isSuspicious(patterns, sbBlacklisted);
-      callback(suspicious, patterns, sbBlacklisted, sbFailed);
-    }).catch(error => {
-      console.error(`Error communicating with background script for ${url}: ${error}`);
+
+      if (suspicious || sbFailed) {
+        addHoverEffect(element);
+      } else {
+        removeHoverEffect(element);
+      }
+
+      showNotification(url, suspicious, patterns, sbBlacklisted, sbFailed);
+    } catch (error) {
+      console.error('Error checking URL:', error);
       const suspicious = isSuspicious(patterns, false);
-      callback(suspicious, patterns, false, true);
-    });
+      showNotification(url, suspicious, patterns, false, true);
+    }
   }
 
-  document.querySelectorAll('a').forEach(link => {
-    link.addEventListener('mouseover', (e) => {
-      const url = link.href;
-      checkLink(url, (suspicious, patterns, sbBlacklisted, sbFailed) => {
-        showNotification(url, suspicious, patterns, sbBlacklisted, sbFailed);
-      });
-    });
-  });
+  // Handle mouseover events
+  function handleMouseOver(event) {
+    const element = event.target;
+    if (element.tagName === 'A' && isEmailLink(element)) {
+      const url = element.href;
+      checkUrl(url, element);
+    }
+  }
 
-  // Monitor dynamically added links
+  // Handle mouseout events
+  function handleMouseOut(event) {
+    const element = event.target;
+    if (element.tagName === 'A') {
+      removeHoverEffect(element);
+    }
+  }
+
+  // Add event listeners
+  document.addEventListener('mouseover', handleMouseOver);
+  document.addEventListener('mouseout', handleMouseOut);
+
+  // Check all links in the page when it loads
+  function checkAllLinks() {
+    if (!isEmailClient()) return;
+
+    const links = document.getElementsByTagName('a');
+    for (const link of links) {
+      if (isEmailLink(link)) {
+        checkUrl(link.href, link);
+      }
+    }
+  }
+
+  // Run initial check
+  checkAllLinks();
+
+  // Watch for new links being added to the page
   const observer = new MutationObserver((mutations) => {
-    mutations.forEach(mutation => {
-      mutation.addedNodes.forEach(node => {
-        if (node.tagName === 'A') {
-          node.addEventListener('mouseover', (e) => {
-            const url = node.href;
-            checkLink(url, (suspicious, patterns, sbBlacklisted, sbFailed) => {
-              showNotification(url, suspicious, patterns, sbBlacklisted, sbFailed);
-            });
-          });
-        } else if (node.querySelectorAll) {
-          node.querySelectorAll('a').forEach(link => {
-            link.addEventListener('mouseover', (e) => {
-              const url = link.href;
-              checkLink(url, (suspicious, patterns, sbBlacklisted, sbFailed) => {
-                showNotification(url, suspicious, patterns, sbBlacklisted, sbFailed);
-              });
-            });
-          });
+    for (const mutation of mutations) {
+      for (const node of mutation.addedNodes) {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          const links = node.getElementsByTagName('a');
+          for (const link of links) {
+            if (isEmailLink(link)) {
+              checkUrl(link.href, link);
+            }
+          }
         }
-      });
-    });
+      }
+    }
   });
 
-  observer.observe(document.body, { childList: true, subtree: true });
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
 });

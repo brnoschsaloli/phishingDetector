@@ -1,35 +1,37 @@
 {
   "manifest_version": 2,
-  "name": "Phishing Catcher",
+  "name": "Phishing Detector",
   "version": "1.0",
-  "description": "Protects against phishing links",
+  "description": "Detects and warns about potential phishing attempts in emails and web pages",
   "permissions": [
     "storage",
-    "webNavigation",
-    "webRequest",
-    "webRequestBlocking",
     "notifications",
-    "<all_urls>"
+    "webNavigation",
+    "https://safebrowsing.googleapis.com/*"
   ],
   "background": {
-    "scripts": ["config.js", "background.js"]
+    "scripts": ["config.js", "background.js"],
+    "persistent": true
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": [
+        "*://mail.google.com/*",
+        "*://outlook.live.com/*",
+        "*://outlook.office.com/*"
+      ],
       "js": ["content.js"],
       "css": ["styles.css"]
     }
   ],
+  "browser_action": {
+    "default_popup": "popup.html"
+  },
   "options_ui": {
     "page": "options.html",
-    "open_in_tab": false
+    "open_in_tab": true
   },
   "web_accessible_resources": [
     "warning.html"
-  ],
-  "icons": {
-    "48": "icon48.png",
-    "128": "icon128.png"
-  }
+  ]
 }
