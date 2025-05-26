@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Phishing Catcher Options</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      width: 400px;
+    }
+    label {
+      display: block;
+      margin-bottom: 10px;
+    }
+    input[type="text"], select, textarea {
+      width: 100%;
+      padding: 5px;
+      margin-bottom: 10px;
+    }
+    textarea {
+      height: 100px;
+      resize: vertical;
+    }
+    button {
+      padding: 10px 20px;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Phishing Catcher Options</h2>
+  <label>
+    Google Safe Browsing API Key:
+    <input type="text" id="apiKey" placeholder="Using API key from config.js (override here if needed)">
+  </label>
+  <label>
+    Sensitivity:
+    <select id="sensitivity">
+      <option value="low">Low (API only)</option>
+      <option value="medium">Medium (API + multiple patterns)</option>
+      <option value="high">High (API + any pattern)</option>
+    </select>
+  </label>
+  <label>
+    <input type="checkbox" id="showSafeNotifications">
+    Show notifications for safe URLs
+  </label>
+  <label>
+    <input type="checkbox" id="blockAllLinks">
+    Block all links (redirect to warning page)
+  </label>
+  <label>
+    Whitelist URLs (one per line):
+    <textarea id="whitelist" placeholder="e.g., google.com\nexample.com"></textarea>
+  </label>
+  <button id="save">Save</button>
+  <button id="clearCache">Clear Cache</button>
+  <script src="options.js"></script>
+</body>
+</html>

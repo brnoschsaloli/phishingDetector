@@ -1,0 +1,35 @@
+{
+  "manifest_version": 2,
+  "name": "Phishing Catcher",
+  "version": "1.0",
+  "description": "Protects against phishing links",
+  "permissions": [
+    "storage",
+    "webNavigation",
+    "webRequest",
+    "webRequestBlocking",
+    "notifications",
+    "<all_urls>"
+  ],
+  "background": {
+    "scripts": ["config.js", "background.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["styles.css"]
+    }
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  },
+  "web_accessible_resources": [
+    "warning.html"
+  ],
+  "icons": {
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}

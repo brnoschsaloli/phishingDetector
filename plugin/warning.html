@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Phishing Catcher - Blocked</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 50px;
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    p {
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+    a {
+      color: #004085;
+      text-decoration: underline;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      border: 1px solid #f5c6cb;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Access Blocked</h1>
+    <p>This link has been blocked by Phishing Catcher for your safety.</p>
+    <p>Blocked URL: <strong id="blockedUrl">Unknown</strong></p>
+    <p>Reason: <span id="reason">Link blocked due to settings</span></p>
+    <p><a href="javascript:history.back()">Go Back</a> | <a href="about:blank">Home</a></p>
+  </div>
+  <script>
+    // Get URL and reason from query parameters
+    const params = new URLSearchParams(window.location.search);
+    const blockedUrl = params.get('url') || 'Unknown';
+    const reason = params.get('reason') || 'Link blocked due to settings';
+    document.getElementById('blockedUrl').textContent = blockedUrl;
+    document.getElementById('reason').textContent = reason;
+  </script>
+</body>
+</html>
